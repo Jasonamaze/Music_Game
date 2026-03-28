@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>五線譜音感練習</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #4caf50;
+            --danger: #f44336;
+            --warning: #f5a623;
+            --bg: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+        }
+
+        /* 初始設定介面 */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: white;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-group h3 {
+            margin-bottom: 15px;
+            color: #333;
+            border-left: 5px solid var(--primary);
+            padding-left: 10px;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .option-btn {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option-btn.active {
+            border-color: var(--primary);
+            background: rgba(74, 144, 226, 0.1);
+            color: var(--primary);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            border-bottom: 1px solid #eee;
+            flex-shrink: 0;
+            background: #fff;
+            z-index: 20;
+        }
+
+        .score-box {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        /* 五線譜區域 */
+        .staff-area {
+            width: 100%;
+            background: #fff;
+            flex-shrink: 0;
+            height: 150px;
+            border-bottom: 1px solid #f0f0f0;
+            position: relative;
+        }
+
+        /* 計時器 UI */
+        #timer-container {
+            position: absolute;
+            top: 5px;
+            left: 60px;
+            right: 10px;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            display: none;
+        }
+
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: var(--warning);
+            border-radius: 3px;
+            transition: width 0.1s linear, background 0.3s;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* 按鈕區域 */
+        .button-area {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            background: #fafafa;
+            overflow: hidden;
+        }
+
+        #controls-wrapper {
+            position: absolute;
+            top: 10px;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 70px; 
+            display: flex;
+            flex-direction: column-reverse; 
+            gap: 2px;
+            z-index: 10;
+        }
+
+        .note-btn {
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 8px 0;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.1s;
+            width: 100%;
+        }
+
+        .note-btn:active {
+            transform: scale(0.92);
+            background: #f0f0f0;
+        }
+
+        @keyframes flash-green {
+            0% { background: var(--success); color: white; border-color: var(--success); }
+            100% { background: #fff; color: inherit; border-color: #ccc; }
+        }
+        @keyframes flash-red {
+            0% { background: var(--danger); color: white; border-color: var(--danger); }
+            100% { background: #fff; color: inherit; border-color: #ccc; }
+        }
+
+        .correct-anim { animation: flash-green 0.5s ease-out; }
+        .wrong-anim { animation: flash-red 0.5s ease-out; }
+
+        .ledger-line { stroke: #000; stroke-width: 1.5; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .btn-main {
+            padding: 12px 25px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        .btn-secondary { background: #999; margin-left: 10px; }
+        #final-score { font-size: 3rem; color: var(--primary); font-weight: bold; display: block; margin: 10px 0; }
+        
+        #point-feedback {
+            position: absolute;
+            top: 20px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: var(--success);
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 初始設定畫面 -->
+    <div id="start-screen">
+        <h1 style="text-align: center; color: var(--primary);">音感練習設定</h1>
+        
+        <div class="setting-group">
+            <h3>選擇譜號範圍</h3>
+            <div class="options">
+                <button class="option-btn active" onclick="setClefMode('all', this)">全部隨機</button>
+                <button class="option-btn" onclick="setClefMode('treble', this)">僅高音譜</button>
+                <button class="option-btn" onclick="setClefMode('bass', this)">僅低音譜</button>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <h3>計時挑戰模式</h3>
+            <div class="options">
+                <button class="option-btn active" onclick="setTimingMode(false, this)">不計時</button>
+                <button class="option-btn" onclick="setTimingMode(true, this)">計時獎勵</button>
+            </div>
+            <p style="font-size: 0.8rem; color: #777; margin-top: 10px;">
+                計時模式：5秒內答對可得獎勵分(最高5分)，答錯扣1分。
+            </p>
+        </div>
+
+        <button class="btn-main" style="width: 100%; height: 60px; font-size: 1.4rem;" onclick="startGame()">開始練習</button>
+    </div>
+
+    <div class="header">
+        <div id="clef-label" style="font-weight:bold; color:#555">讀譜練習</div>
+        <div class="score-box">得分: <span id="score-val">0</span></div>
+    </div>
+
+    <div class="staff-area">
+        <div id="timer-container"><div id="timer-bar"></div></div>
+        <div id="point-feedback"></div>
+        <svg id="staff-svg" viewBox="0 0 400 140">
+            <g stroke="#333" stroke-width="1.2">
+                <line x1="60" y1="30" x2="390" y2="30" />
+                <line x1="60" y1="50" x2="390" y2="50" />
+                <line x1="60" y1="70" x2="390" y2="70" />
+                <line x1="60" y1="90" x2="390" y2="90" />
+                <line x1="60" y1="110" x2="390" y2="110" />
+                <line x1="60" y1="30" x2="60" y2="110" stroke-width="2"/>
+            </g>
+            <g id="clef-layer"></g>
+            <g id="notes-layer"></g>
+        </svg>
+    </div>
+
+    <div class="button-area">
+        <div id="controls-wrapper">
+            <button class="note-btn" onclick="checkAnswer('Do')">Do</button>
+            <button class="note-btn" onclick="checkAnswer('Re')">Re</button>
+            <button class="note-btn" onclick="checkAnswer('Mi')">Mi</button>
+            <button class="note-btn" onclick="checkAnswer('Fa')">Fa</button>
+            <button class="note-btn" onclick="checkAnswer('So')">So</button>
+            <button class="note-btn" onclick="checkAnswer('La')">La</button>
+            <button class="note-btn" onclick="checkAnswer('Si')">Si</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="next-level-modal">
+    <div class="modal">
+        <h2>完成！</h2>
+        <p>是否進入下一關？</p>
+        <button class="btn-main" onclick="startLevel(true)">下一關</button>
+        <button class="btn-main btn-secondary" onclick="showSummary()">結束</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="summary-modal">
+    <div class="modal">
+        <h2>練習總結</h2>
+        <span id="final-score">0</span>
+        <button class="btn-main" onclick="resetGame()">重新開始</button>
+    </div>
+</div>
+
+<script>
+    // 譜號 SVG 路徑
+    const CLEF_PATHS = {
+        // 高音譜 (依據 High.svg 更新)
+        treble: `M28.4,124.7c-5.8,0-10.8-4.5-10.8-10.3c0-7.5,7.2-14.1,16.4-14.1c4.5,0,7.6,1.6,7.6,4.2c0,1.8-1.6,3.1-3.7,3.1c-1.8,0-3.1-1.3-3.1-2.9c0-0.5,0.3-1.1,0.5-1.4c-1.8-0.5-3.2-0.8-4.9-0.8c-6.1,0-10.1,3.7-10.1,8.4c0,4.1,3.3,7,7.4,7c6.3,0,12.8-5.5,12.8-14.7c0-12.1-11.2-20.5-11.2-33.1c0-7.2,4.5-13.9,11.2-13.9c1.6,0,3.2,0.4,4.3,1V18.1c0-7.9-4.2-13.2-9.9-13.2c-6.1,0-10.8,7.2-10.8,17.4c0,12,6.2,24.2,14.7,37.1l3,4.6c8.5,13.2,13.4,25.2,13.4,37.2c0,15.1-10.6,25.8-25.1,25.8c-12.9,0-23-8.5-23-20.4c0-13.7,12.4-26.8,29.2-36.2l2.6-1.4V16.7C39,1.5,48.9-9.4,60.3-9.4c10.7,0,18.1,8.9,18.1,20.7c0,13.8-7.8,23.8-19.7,32l-3.1,2.1v87.2c0,14.5-8.8,21.7-19.5,21.7c-10.4,0-17.6-7-17.6-16.3c0-6.4,4.2-11.1,9.9-11.1c5,0,8.7,3.4,8.7,8.3c0,4.2-2.6,7.2-6.3,8c1.6,1.1,3.6,1.6,5.8,1.6c5.4,0,9.2-4.3,9.2-11.8v-81c-12,8-19.3,17.2-19.3,27.6c0,9.3,5.5,15.3,13.4,15.3c1.6,0,3-0.3,4.3-0.8V123.9C36.7,123.9,32.7,124.7,28.4,124.7z`,
+        // 低音譜 (依據 Low.svg 更新)
+        bass: `M12,48c0-14,20-22,26-22c18,0,30,14,30,32c0,32-40,55-52,95 M72,44a5,5,0,1,1,0.1,0z M72,74a5,5,0,1,1,0.1,0z`
+    };
+
+    const TREBLE_PITCHES = [
+        { name: 'Do', y: 130, ledger: true }, { name: 'Re', y: 120 }, { name: 'Mi', y: 110 },
+        { name: 'Fa', y: 100 }, { name: 'So', y: 90 }, { name: 'La', y: 80 },
+        { name: 'Si', y: 70 }, { name: 'Do', y: 60 }, { name: 'Re', y: 50 },
+        { name: 'Mi', y: 40 }, { name: 'Fa', y: 30 }, { name: 'So', y: 20 }
+    ];
+
+    const BASS_PITCHES = [
+        { name: 'Do', y: 10, ledger: true }, { name: 'Si', y: 20 }, { name: 'La', y: 30 },
+        { name: 'So', y: 40 }, { name: 'Fa', y: 50 }, { name: 'Mi', y: 60 },
+        { name: 'Re', y: 70 }, { name: 'Do', y: 80 }, { name: 'Si', y: 90 },
+        { name: 'La', y: 100 }, { name: 'So', y: 110 }, { name: 'Fa', y: 120 }
+    ];
+
+    let state = {
+        score: 0,
+        currentLevel: 1,
+        clef: 'treble',
+        notes: [],
+        activeIndex: 0,
+        startTime: 0,
+        config: {
+            clefRange: 'all',
+            isTiming: false
+        },
+        timerInterval: null
+    };
+
+    function setClefMode(mode, el) {
+        state.config.clefRange = mode;
+        const parent = el.parentElement;
+        parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function setTimingMode(isTiming, el) {
+        state.config.isTiming = isTiming;
+        const parent = el.parentElement;
+        parent.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').style.display = 'none';
+        startLevel();
+    }
+
+    function startLevel(isNext = false) {
+        if (isNext) state.currentLevel++;
+        document.getElementById('next-level-modal').style.display = 'none';
+        
+        // 決定譜號
+        if (state.config.clefRange === 'all') {
+            state.clef = Math.random() > 0.5 ? 'treble' : 'bass';
+        } else {
+            state.clef = state.config.clefRange;
+        }
+        
+        document.getElementById('clef-label').innerText = (state.clef === 'treble' ? "高音譜" : "低音譜") + "練習";
+        if (state.config.isTiming) {
+            document.getElementById('timer-container').style.display = 'block';
+        } else {
+            document.getElementById('timer-container').style.display = 'none';
+        }
+        
+        drawClef();
+        generateNotes();
+        state.activeIndex = 0;
+        updateActiveNote();
+    }
+
+    function drawClef() {
+        const layer = document.getElementById('clef-layer');
+        layer.innerHTML = '';
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", CLEF_PATHS[state.clef]);
+        path.setAttribute("fill", "black");
+        if (state.clef === 'treble') {
+            path.setAttribute("transform", "translate(10, 5) scale(0.8)");
+        } else {
+            path.setAttribute("transform", "translate(10, 23) scale(0.7)");
+        }
+        layer.appendChild(path);
+    }
+
+    function generateNotes() {
+        state.notes = [];
+        const layer = document.getElementById('notes-layer');
+        layer.innerHTML = '';
+        const pool = state.clef === 'treble' ? TREBLE_PITCHES : BASS_PITCHES;
+        for (let i = 0; i < 6; i++) {
+            const pitch = pool[Math.floor(Math.random() * pool.length)];
+            const noteData = { ...pitch, id: i, x: 115 + i * 50, solved: false };
+            state.notes.push(noteData);
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            if (noteData.ledger) {
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", noteData.x - 12); line.setAttribute("x2", noteData.x + 12);
+                line.setAttribute("y1", noteData.y); line.setAttribute("y2", noteData.y);
+                line.setAttribute("class", "ledger-line");
+                g.appendChild(line);
+            }
+            const el = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+            el.setAttribute("cx", noteData.x); el.setAttribute("cy", noteData.y);
+            el.setAttribute("rx", "7.5"); el.setAttribute("ry", "5.8");
+            el.setAttribute("transform", `rotate(-20, ${noteData.x}, ${noteData.y})`);
+            el.setAttribute("fill", "#000"); el.id = `note-head-${i}`;
+            g.appendChild(el);
+            layer.appendChild(g);
+        }
+    }
+
+    /**
+     * 核心修正：加入 guard clause 避免存取未定義的音符資料
+     */
+    function updateActiveNote() {
+        // 檢查 state.notes 是否存在且有內容，以及當前索引是否有效
+        if (!state.notes || state.notes.length === 0 || !state.notes[state.activeIndex]) return;
+
+        const note = state.notes[state.activeIndex];
+        const wrapper = document.getElementById('controls-wrapper');
+        const svg = document.getElementById('staff-svg');
+        const rect = svg.getBoundingClientRect();
+        
+        // 計算縮放後的 X 位置
+        const ratio = note.x / 400; 
+        const screenX = rect.width * ratio;
+        wrapper.style.left = (screenX - 35) + "px";
+
+        state.notes.forEach((n, idx) => {
+            const head = document.getElementById(`note-head-${idx}`);
+            if (!head) return;
+            if (idx === state.activeIndex) {
+                head.setAttribute("fill", "var(--primary)");
+                head.setAttribute("stroke", "var(--primary)");
+                head.setAttribute("stroke-width", "2");
+            } else if (!n.solved) {
+                head.setAttribute("fill", "#000");
+                head.setAttribute("stroke", "none");
+            }
+        });
+
+        // 開始計時
+        state.startTime = Date.now();
+        if (state.config.isTiming) {
+            startTimer();
+        }
+    }
+
+    function startTimer() {
+        if (state.timerInterval) clearInterval(state.timerInterval);
+        const bar = document.getElementById('timer-bar');
+        bar.style.width = '100%';
+        bar.style.background = 'var(--warning)';
+
+        state.timerInterval = setInterval(() => {
+            const elapsed = Date.now() - state.startTime;
+            const progress = Math.max(0, 100 - (elapsed / 5000) * 100);
+            bar.style.width = progress + '%';
+            
+            if (progress < 30) bar.style.background = 'var(--danger)';
+            
+            if (progress === 0) {
+                clearInterval(state.timerInterval);
+            }
+        }, 50);
+    }
+
+    function checkAnswer(answer) {
+        if (!state.notes[state.activeIndex]) return;
+        
+        const note = state.notes[state.activeIndex];
+        const buttons = document.querySelectorAll('.note-btn');
+        let targetBtn;
+        buttons.forEach(b => { if(b.innerText === answer) targetBtn = b; });
+        const noteHead = document.getElementById(`note-head-${state.activeIndex}`);
+        const elapsed = (Date.now() - state.startTime) / 1000;
+
+        if (note.name === answer) {
+            // 答對邏輯
+            let points = 0;
+            if (state.config.isTiming) {
+                if (elapsed <= 1) points = 5;
+                else if (elapsed <= 2) points = 4;
+                else if (elapsed <= 3) points = 3;
+                else if (elapsed <= 4) points = 2;
+                else if (elapsed <= 5) points = 1;
+                else points = 0;
+            } else {
+                points = 1;
+            }
+            
+            state.score += points;
+            note.solved = true;
+            if (noteHead) {
+                noteHead.setAttribute("fill", "var(--success)");
+                noteHead.setAttribute("stroke", "var(--success)");
+            }
+            targetBtn.classList.add('correct-anim');
+            
+            // 顯示獲得分數回饋
+            if (state.config.isTiming) showFeedback(points, note.x);
+
+            setTimeout(() => targetBtn.classList.remove('correct-anim'), 500);
+            
+            clearInterval(state.timerInterval);
+            state.activeIndex++;
+            if (state.activeIndex < 6) {
+                setTimeout(updateActiveNote, 300);
+            } else {
+                setTimeout(() => { document.getElementById('next-level-modal').style.display = 'flex'; }, 500);
+            }
+        } else {
+            // 答錯一律扣1分
+            state.score--;
+            if (noteHead) {
+                noteHead.setAttribute("fill", "var(--danger)");
+                noteHead.setAttribute("stroke", "var(--danger)");
+            }
+            targetBtn.classList.add('wrong-anim');
+            setTimeout(() => targetBtn.classList.remove('wrong-anim'), 500);
+        }
+        document.getElementById('score-val').innerText = state.score;
+    }
+
+    function showFeedback(pts, x) {
+        const feedback = document.getElementById('point-feedback');
+        const svgRect = document.getElementById('staff-svg').getBoundingClientRect();
+        const screenX = svgRect.width * (x / 400);
+        
+        feedback.innerText = "+" + pts;
+        feedback.style.left = (screenX - 10) + "px";
+        feedback.style.top = "10px";
+        feedback.style.opacity = "1";
+        feedback.style.transform = "translateY(-10px)";
+        
+        setTimeout(() => {
+            feedback.style.opacity = "0";
+            feedback.style.transform = "translateY(0)";
+        }, 600);
+    }
+
+    function showSummary() {
+        document.getElementById('next-level-modal').style.display = 'none';
+        document.getElementById('summary-modal').style.display = 'flex';
+        document.getElementById('final-score').innerText = state.score;
+    }
+
+    function resetGame() {
+        state.score = 0; state.currentLevel = 1;
+        document.getElementById('score-val').innerText = 0;
+        document.getElementById('summary-modal').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'flex';
+    }
+
+    window.addEventListener('resize', updateActiveNote);
+</script>
+
+</body>
+</html>
