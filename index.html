@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>音感練習 - 鋼琴與五線譜專業版</title>
+    <title>音感練習 - 專業版</title>
     <style>
         :root {
             --primary: #4a90e2;
@@ -22,108 +22,99 @@
             height: 100vh; overflow: hidden; touch-action: manipulation;
         }
 
-        /* 雲朵裝飾 */
-        .cloud {
-            position: absolute; background: var(--cloud-white); border-radius: 50px;
-            opacity: 0.6; z-index: -1; filter: blur(3px);
-        }
-        .cloud-1 { width: 100px; height: 40px; top: 10%; left: 10%; animation: move 40s linear infinite; }
-        .cloud-2 { width: 150px; height: 60px; top: 15%; right: 5%; animation: move 50s linear infinite reverse; }
-        @keyframes move { from { transform: translateX(-150px); } to { transform: translateX(calc(100vw + 150px)); } }
-
         .container {
             width: 100%; max-width: 500px;
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
             display: flex; flex-direction: column; height: 100%;
             position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.1);
         }
 
-        /* 初始設定 */
+        /* 初始設定介面 - 優化手機顯示 */
         #start-screen {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: white; z-index: 1000;
-            display: flex; flex-direction: column; padding: 25px;
+            display: flex; flex-direction: column; padding: 15px;
+            overflow-y: auto;
         }
-        .setting-group { margin-bottom: 20px; }
-        .setting-group h3 { margin-bottom: 10px; color: #333; border-left: 5px solid var(--primary); padding-left: 10px; font-size: 1rem; }
-        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        .setting-group { margin-bottom: 10px; }
+        .setting-group h3 {
+            margin-bottom: 8px; color: #333;
+            border-left: 5px solid var(--primary); padding-left: 10px; font-size: 0.9rem;
+        }
+
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
         .option-btn {
-            padding: 12px; border: 2px solid #ddd; border-radius: 12px;
-            background: #fff; font-weight: bold; cursor: pointer; font-size: 0.9rem;
+            padding: 10px; border: 2px solid #ddd; border-radius: 10px;
+            background: #fff; font-weight: bold; cursor: pointer; font-size: 0.85rem;
         }
         .option-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
 
         .header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 15px; border-bottom: 1px solid #eee; flex-shrink: 0;
+            padding: 8px 15px; border-bottom: 1px solid #eee; flex-shrink: 0;
+            background: #fff;
         }
 
-        /* 顯示區域 */
         .display-area {
-            width: 100%; height: 160px; position: relative; margin-top: 10px;
+            width: 100%; height: 180px; position: relative; margin-top: 5px;
             display: flex; justify-content: center; align-items: center;
+            background: white;
         }
 
         /* 鋼琴樣式 */
         #piano-container {
-            display: none; width: 95%; height: 130px; position: relative;
-            background: #222; padding: 2px; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: none; width: 95%; height: 140px; position: relative;
+            background: #222; padding: 2px; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         .piano-key { position: absolute; border: 1px solid #333; border-radius: 0 0 5px 5px; transition: background 0.1s; }
         .white-key { background: white; width: 7.14%; height: 100%; z-index: 1; }
-        .black-key { background: #000; width: 4.8%; height: 60%; z-index: 2; border-radius: 0 0 3px 3px; border: 1px solid #000; }
+        .black-key { background: #000; width: 4.8%; height: 60%; z-index: 2; border-radius: 0 0 3px 3px; }
         .key-highlight { background: var(--warning) !important; box-shadow: inset 0 0 15px rgba(255,255,255,0.8); }
 
         /* 五線譜樣式 */
-        svg { width: 100%; height: 100%; display: block; }
+        #staff-svg { width: 100%; height: 100%; display: block; }
         .ledger-line { stroke: #333; stroke-width: 1.5; }
 
         /* 計時器 */
         #timer-container {
-            position: absolute; top: -10px; left: 10%; right: 10%;
+            position: absolute; top: -5px; left: 15%; right: 15%;
             height: 6px; background: rgba(0,0,0,0.05); border-radius: 3px; display: none;
+            z-index: 5;
         }
         #timer-bar { width: 100%; height: 100%; background: var(--warning); border-radius: 3px; }
 
         /* 固定按鈕區域 */
         .button-area {
             position: relative; flex-grow: 1; width: 100%; 
-            background: #f9f9f9; padding: 15px 5px;
-            display: flex; flex-direction: column; gap: 12px; align-items: center;
+            background: #fdfdfd; padding: 10px 5px;
+            display: flex; flex-direction: column; gap: 8px; align-items: center;
+            justify-content: center;
         }
-        .btn-row { display: flex; gap: 5px; width: 100%; justify-content: center; }
+        .btn-row { display: flex; gap: 4px; width: 100%; justify-content: center; height: 55px; }
         .note-btn {
-            background: #fff; border: 2px solid #ddd; padding: 12px 0;
-            font-size: 0.9rem; font-weight: bold; border-radius: 10px;
-            cursor: pointer; box-shadow: 0 3px 0 #ddd; width: 13%; text-align: center;
-            transition: all 0.1s;
+            background: #fff; border: 2px solid #ddd; padding: 10px 0;
+            font-size: 1rem; font-weight: bold; border-radius: 10px;
+            cursor: pointer; box-shadow: 0 3px 0 #ddd; width: 13.5%; text-align: center;
+            transition: all 0.1s; color: var(--primary);
         }
         .note-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #ddd; }
-        .note-btn.accidental { width: 18%; background: #f0f0f0; border-color: #ccc; box-shadow: 0 3px 0 #ccc; }
-
-        /* 反饋效果 */
-        @keyframes flash-green { 0% { background: var(--success); color: white; } 100% { background: #fff; } }
-        @keyframes flash-red { 0% { background: var(--danger); color: white; } 100% { background: #fff; } }
-        .correct-anim { animation: flash-green 0.5s; }
-        .wrong-anim { animation: flash-red 0.5s; }
+        .note-btn.accidental { width: 18%; background: #f8f8f8; border-color: #ccc; box-shadow: 0 3px 0 #ccc; color: #555; }
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 2000;
+            background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 2000;
         }
-        .modal { background: white; padding: 30px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; }
-        .btn-main { padding: 15px 25px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; }
+        .modal { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; }
+        .btn-main { padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="cloud cloud-1"></div>
-<div class="cloud cloud-2"></div>
-
 <div class="container">
     <div id="start-screen">
-        <h1 style="text-align: center; color: var(--primary); margin-top: 0;">🎹 音感練習專業版</h1>
+        <h1 style="text-align: center; color: var(--primary); margin: 10px 0;">🎹 音感練習</h1>
         <div class="setting-group">
             <h3>練習模式</h3>
             <div class="options">
@@ -140,19 +131,22 @@
                 <button class="option-btn" onclick="setTiming(true, this)">計時獎勵</button>
             </div>
         </div>
-        <button class="btn-main" style="margin-top: auto; height: 60px; font-size: 1.2rem;" onclick="startGame()">開始練習 (10關)</button>
+        <!-- 手機上移按鈕 -->
+        <div style="margin-top: 15px;">
+            <button class="btn-main" style="width: 100%; height: 50px; font-size: 1.1rem;" onclick="startGame()">開始練習 (10關)</button>
+        </div>
     </div>
 
     <div class="header">
         <div id="level-label" style="font-weight:bold; color:#666">第 1 / 10 關</div>
-        <div class="score-box">分數: <span id="score-val">0</span></div>
+        <div style="font-weight:bold; color:var(--primary)">分數: <span id="score-val">0</span></div>
     </div>
 
     <div class="display-area">
         <div id="timer-container"><div id="timer-bar"></div></div>
         
-        <!-- 五線譜 (PNG 圖像載入) -->
-        <svg id="staff-svg" viewBox="0 0 400 140" style="display: block;">
+        <!-- 五線譜 -->
+        <svg id="staff-svg" viewBox="0 0 400 140">
             <g stroke="#444" stroke-width="1.3">
                 <line x1="60" y1="30" x2="390" y2="30" /><line x1="60" y1="50" x2="390" y2="50" />
                 <line x1="60" y1="70" x2="390" y2="70" /><line x1="60" y1="90" x2="390" y2="90" />
@@ -166,21 +160,16 @@
         <div id="piano-container"></div>
     </div>
 
-    <!-- 固定按鈕區域 -->
     <div class="button-area">
-        <!-- 升記號按鈕列 -->
-        <div class="btn-row" id="row-sharp">
+        <div class="btn-row" id="row-sharp" style="display: none;">
             <button class="note-btn accidental" onclick="checkAnswer('升Do')">升Do</button>
             <button class="note-btn accidental" onclick="checkAnswer('升Re')">升Re</button>
-            <div style="width:13%"></div>
+            <div style="width:13.5%"></div>
             <button class="note-btn accidental" onclick="checkAnswer('升Fa')">升Fa</button>
             <button class="note-btn accidental" onclick="checkAnswer('升So')">升So</button>
             <button class="note-btn accidental" onclick="checkAnswer('升La')">升La</button>
-            <div style="width:13%"></div>
         </div>
-
-        <!-- 白鍵按鈕列 (始終顯示) -->
-        <div class="btn-row" id="row-white">
+        <div class="btn-row">
             <button class="note-btn" onclick="checkAnswer('Do')">Do</button>
             <button class="note-btn" onclick="checkAnswer('Re')">Re</button>
             <button class="note-btn" onclick="checkAnswer('Mi')">Mi</button>
@@ -189,13 +178,11 @@
             <button class="note-btn" onclick="checkAnswer('La')">La</button>
             <button class="note-btn" onclick="checkAnswer('Si')">Si</button>
         </div>
-
-        <!-- 降記號按鈕列 -->
-        <div class="btn-row" id="row-flat">
-            <div style="width:13%"></div>
+        <div class="btn-row" id="row-flat" style="display: none;">
+            <div style="width:13.5%"></div>
             <button class="note-btn accidental" onclick="checkAnswer('降Re')">降Re</button>
             <button class="note-btn accidental" onclick="checkAnswer('降Mi')">降Mi</button>
-            <div style="width:13%"></div>
+            <div style="width:13.5%"></div>
             <button class="note-btn accidental" onclick="checkAnswer('降So')">降So</button>
             <button class="note-btn accidental" onclick="checkAnswer('降La')">降La</button>
             <button class="note-btn accidental" onclick="checkAnswer('降Si')">降Si</button>
@@ -204,7 +191,7 @@
 </div>
 
 <div class="modal-overlay" id="next-level-modal">
-    <div class="modal"><h2 style="color:var(--success)">完成關卡！</h2><button class="btn-main" onclick="startLevel(true)">下一關</button></div>
+    <div class="modal"><h2>完成關卡！</h2><button class="btn-main" onclick="startLevel(true)">下一關</button></div>
 </div>
 <div class="modal-overlay" id="summary-modal">
     <div class="modal"><h2>練習總結</h2><h1 id="final-score" style="color:var(--primary); font-size:4rem;">0</h1><button class="btn-main" onclick="resetGame()">重新開始</button></div>
@@ -212,34 +199,31 @@
 
 <script>
     const AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const SEMITONES = {'Do':0,'升Do':1,'降Re':1,'Re':2,'升Re':3,'降Mi':3,'Mi':4,'Fa':5,'升Fa':6,'降So':6,'So':7,'升So':8,'降La':8,'La':9,'升La':10,'降Si':10,'Si':11};
     
-    // 頻率表 (半音階)
-    const SEMITONES = {
-        'Do': 0, '升Do': 1, '降Re': 1, 'Re': 2, '升Re': 3, '降Mi': 3, 'Mi': 4,
-        'Fa': 5, '升Fa': 6, '降So': 6, 'So': 7, '升So': 8, '降La': 8, 'La': 9, '升La': 10, '降Si': 10, 'Si': 11
-    };
-
-    const PIANO_WHITE_KEYS = [
-        { name: 'Do', semitone: 0 }, { name: 'Re', semitone: 2 }, { name: 'Mi', semitone: 4 },
-        { name: 'Fa', semitone: 5 }, { name: 'So', semitone: 7 }, { name: 'La', semitone: 9 }, { name: 'Si', semitone: 11 }
+    // 五線譜音高對應
+    const TREBLE_PITCHES = [
+        {name:'Do', y:130, ledger:true}, {name:'Re', y:120}, {name:'Mi', y:110}, {name:'Fa', y:100},
+        {name:'So', y:90}, {name:'La', y:80}, {name:'Si', y:70}, {name:'Do', y:60},
+        {name:'Re', y:50}, {name:'Mi', y:40}, {name:'Fa', y:30}, {name:'So', y:20}
+    ];
+    const BASS_PITCHES = [
+        {name:'Do', y:10, ledger:true}, {name:'Si', y:20}, {name:'La', y:30}, {name:'So', y:40},
+        {name:'Fa', y:50}, {name:'Mi', y:60}, {name:'Re', y:70}, {name:'Do', y:80},
+        {name:'Si', y:90}, {name:'La', y:100}, {name:'So', y:110}, {name:'Fa', y:120}
     ];
 
     const PIANO_BLACK_KEYS = [
-        { sharp: '升Do', flat: '降Re', semitone: 1, leftWk: 0 },
-        { sharp: '升Re', flat: '降Mi', semitone: 3, leftWk: 1 },
-        { sharp: '升Fa', flat: '降So', semitone: 6, leftWk: 3 },
-        { sharp: '升So', flat: '降La', semitone: 8, leftWk: 4 },
-        { sharp: '升La', flat: '降Si', semitone: 10, leftWk: 5 }
+        {sharp:'升Do', flat:'降Re', semi:1, left:0}, {sharp:'升Re', flat:'降Mi', semi:3, left:1},
+        {sharp:'升Fa', flat:'降So', semi:6, left:3}, {sharp:'升So', flat:'降La', semi:8, left:4},
+        {sharp:'升La', flat:'降Si', semi:10, left:5}
     ];
 
-    let state = {
-        score: 0, currentLevel: 1, mode: 'all', isTiming: false,
-        notes: [], activeIndex: 0, currentClef: 'treble', timerInterval: null
-    };
+    let state = { score: 0, currentLevel: 1, mode: 'all', isTiming: false, notes: [], activeIndex: 0, timerInterval: null };
 
-    function setMode(m, el) { state.mode = m; updateActiveBtn(el); }
-    function setTiming(t, el) { state.isTiming = t; updateActiveBtn(el); }
-    function updateActiveBtn(el) { el.parentElement.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
+    function setMode(m, el) { state.mode = m; updateOptionBtns(el); }
+    function setTiming(t, el) { state.isTiming = t; updateOptionBtns(el); }
+    function updateOptionBtns(el) { el.parentElement.querySelectorAll('.option-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
 
     function startGame() {
         if (AudioCtx.state === 'suspended') AudioCtx.resume();
@@ -262,8 +246,8 @@
             PIANO_BLACK_KEYS.forEach(bk => {
                 const bkey = document.createElement('div');
                 bkey.className = 'piano-key black-key';
-                bkey.style.left = ((oct * 7 + bk.leftWk) * 7.14 + 4.8) + '%';
-                bkey.id = `bk-${oct}-${bk.semitone}`;
+                bkey.style.left = ((oct * 7 + bk.left) * 7.14 + 4.8) + '%';
+                bkey.id = `bk-${oct}-${bk.semi}`;
                 container.appendChild(bkey);
             });
         }
@@ -282,11 +266,7 @@
         document.getElementById('piano-container').style.display = isPiano ? 'block' : 'none';
 
         if (!isPiano) drawClef(activeMode);
-
-        state.notes = [];
-        for (let i = 0; i < 6; i++) {
-            state.notes.push(generateQuestion(activeMode));
-        }
+        generateNotes(activeMode);
         state.activeIndex = 0;
         updateUI();
     }
@@ -305,68 +285,98 @@
         layer.appendChild(img);
     }
 
-    function generateQuestion(mode) {
-        if (mode === 'piano') {
-            const level = state.currentLevel;
-            let pool = [];
-            
-            if (level <= 3) { // 1-3 關: 白鍵
-                pool = PIANO_WHITE_KEYS.map(k => ({...k, type: 'white'}));
-            } else if (level <= 5) { // 4-5 關: 黑鍵 (升)
-                pool = PIANO_BLACK_KEYS.map(k => ({ name: k.sharp, semitone: k.semitone, type: 'black' }));
-            } else if (level <= 7) { // 6-7 關: 黑鍵 (降)
-                pool = PIANO_BLACK_KEYS.map(k => ({ name: k.flat, semitone: k.semitone, type: 'black' }));
-            } else { // 8-10 關: 混合
-                const isBlack = Math.random() > 0.5;
-                if (!isBlack) {
-                    pool = PIANO_WHITE_KEYS.map(k => ({...k, type: 'white'}));
-                } else {
-                    const useSharp = Math.random() > 0.5;
-                    pool = PIANO_BLACK_KEYS.map(k => ({ name: useSharp ? k.sharp : k.flat, semitone: k.semitone, type: 'black' }));
-                }
+    function generateNotes(mode) {
+        state.notes = [];
+        const layer = document.getElementById('notes-layer');
+        layer.innerHTML = '';
+        
+        for (let i = 0; i < 6; i++) {
+            let note;
+            if (mode === 'piano') {
+                note = generatePianoNote();
+            } else {
+                const pool = mode === 'treble' ? TREBLE_PITCHES : BASS_PITCHES;
+                const raw = pool[Math.floor(Math.random() * pool.length)];
+                note = { ...raw, x: 120 + i * 45, id: i, oct: 0 };
+                renderStaffNote(note);
             }
-
-            const raw = pool[Math.floor(Math.random() * pool.length)];
-            const oct = Math.floor(Math.random() * 2);
-            return {
-                name: raw.name,
-                semitone: raw.semitone,
-                octave: oct,
-                type: raw.type,
-                keyId: raw.type === 'white' ? `wk-${oct}-${PIANO_WHITE_KEYS.findIndex(k=>k.semitone===raw.semitone)}` : `bk-${oct}-${raw.semitone}`
-            };
-        } else {
-            const pool = ['Do','Re','Mi','Fa','So','La','Si'];
-            const name = pool[Math.floor(Math.random()*7)];
-            return { name, semitone: SEMITONES[name], octave: 0, x: 120 + state.notes.length * 50, y: 70 };
+            state.notes.push(note);
         }
     }
 
-    /**
-     * 修改重點：根據當前題目動態顯示/隱藏升降記號按鈕列
-     */
+    function generatePianoNote() {
+        const lv = state.currentLevel;
+        let note = {};
+        const oct = Math.floor(Math.random() * 2);
+        
+        if (lv <= 3) { // 白鍵
+            const idx = Math.floor(Math.random() * 7);
+            note = { name: ['Do','Re','Mi','Fa','So','La','Si'][idx], keyId: `wk-${oct}-${idx}`, oct: oct };
+        } else if (lv <= 5) { // 黑鍵 (升)
+            const bk = PIANO_BLACK_KEYS[Math.floor(Math.random() * 5)];
+            note = { name: bk.sharp, keyId: `bk-${oct}-${bk.semi}`, oct: oct };
+        } else if (lv <= 7) { // 黑鍵 (降)
+            const bk = PIANO_BLACK_KEYS[Math.floor(Math.random() * 5)];
+            note = { name: bk.flat, keyId: `bk-${oct}-${bk.semi}`, oct: oct };
+        } else { // 混合
+            const isBlack = Math.random() > 0.5;
+            if (!isBlack) {
+                const idx = Math.floor(Math.random() * 7);
+                note = { name: ['Do','Re','Mi','Fa','So','La','Si'][idx], keyId: `wk-${oct}-${idx}`, oct: oct };
+            } else {
+                const bk = PIANO_BLACK_KEYS[Math.floor(Math.random() * 5)];
+                const useSharp = Math.random() > 0.5;
+                note = { name: useSharp ? bk.sharp : bk.flat, keyId: `bk-${oct}-${bk.semi}`, oct: oct };
+            }
+        }
+        return note;
+    }
+
+    function renderStaffNote(note) {
+        const layer = document.getElementById('notes-layer');
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        
+        if (note.ledger) {
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", note.x - 12); line.setAttribute("x2", note.x + 12);
+            line.setAttribute("y1", note.y); line.setAttribute("y2", note.y);
+            line.setAttribute("class", "ledger-line");
+            g.appendChild(line);
+        }
+        
+        const ellipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+        ellipse.setAttribute("cx", note.x); ellipse.setAttribute("cy", note.y);
+        ellipse.setAttribute("rx", "7.5"); ellipse.setAttribute("ry", "5.8");
+        ellipse.setAttribute("transform", `rotate(-20, ${note.x}, ${note.y})`);
+        ellipse.setAttribute("fill", "#000"); ellipse.id = `note-head-${note.id}`;
+        g.appendChild(ellipse);
+        layer.appendChild(g);
+    }
+
     function updateUI() {
-        if (!state.notes[state.activeIndex]) return;
         const note = state.notes[state.activeIndex];
         
-        // 鋼琴高亮
-        document.querySelectorAll('.piano-key').forEach(k => k.classList.remove('key-highlight'));
-        if (note.keyId) document.getElementById(note.keyId).classList.add('key-highlight');
+        // 琴鍵模式 UI
+        if (document.getElementById('piano-container').style.display === 'block') {
+            document.querySelectorAll('.piano-key').forEach(k => k.classList.remove('key-highlight'));
+            if (note.keyId) document.getElementById(note.keyId).classList.add('key-highlight');
+        } else {
+            // 五線譜高亮當前音符
+            state.notes.forEach((n, idx) => {
+                const h = document.getElementById(`note-head-${idx}`);
+                if (h) h.setAttribute('fill', idx === state.activeIndex ? 'var(--primary)' : (n.solved ? 'var(--success)' : '#000'));
+            });
+        }
 
-        // 控制變調按鈕列的顯示
+        // 動態按鈕列
         const rowSharp = document.getElementById('row-sharp');
         const rowFlat = document.getElementById('row-flat');
-
         if (note.name.startsWith('升')) {
-            rowSharp.style.display = 'flex';
-            rowFlat.style.display = 'none';
+            rowSharp.style.display = 'flex'; rowFlat.style.display = 'none';
         } else if (note.name.startsWith('降')) {
-            rowSharp.style.display = 'none';
-            rowFlat.style.display = 'flex';
+            rowSharp.style.display = 'none'; rowFlat.style.display = 'flex';
         } else {
-            // 白鍵時隱藏兩者，讓畫面保持整潔
-            rowSharp.style.display = 'none';
-            rowFlat.style.display = 'none';
+            rowSharp.style.display = 'none'; rowFlat.style.display = 'none';
         }
 
         state.startTime = Date.now();
@@ -379,9 +389,9 @@
         document.getElementById('timer-container').style.display = 'block';
         state.timerInterval = setInterval(() => {
             const elapsed = Date.now() - state.startTime;
-            const progress = Math.max(0, 100 - (elapsed / 5000) * 100);
-            bar.style.width = progress + '%';
-            if (progress === 0) clearInterval(state.timerInterval);
+            const prog = Math.max(0, 100 - (elapsed / 5000) * 100);
+            bar.style.width = prog + '%';
+            if (prog === 0) clearInterval(state.timerInterval);
         }, 50);
     }
 
@@ -390,7 +400,7 @@
         const elapsed = (Date.now() - state.startTime) / 1000;
         
         if (ans === note.name) {
-            playPiano(note.name, note.octave);
+            playPiano(note.name, note.oct);
             let pts = 1;
             if (state.isTiming) {
                 if (elapsed <= 1) pts = 5;
@@ -398,6 +408,7 @@
                 else pts = 0;
             }
             state.score += pts;
+            note.solved = true;
             state.activeIndex++;
             
             if (state.activeIndex < 6) {
@@ -420,9 +431,9 @@
         const g = AudioCtx.createGain();
         osc.type = 'triangle'; osc.frequency.value = freq;
         g.gain.setValueAtTime(0.5, AudioCtx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.01, AudioCtx.currentTime + 1);
+        g.gain.exponentialRampToValueAtTime(0.01, AudioCtx.currentTime + 1.2);
         osc.connect(g); g.connect(AudioCtx.destination);
-        osc.start(); osc.stop(AudioCtx.currentTime + 1);
+        osc.start(); osc.stop(AudioCtx.currentTime + 1.2);
     }
 
     function playError() {
