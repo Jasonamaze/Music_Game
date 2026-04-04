@@ -10,6 +10,7 @@
             --success: #4caf50;
             --danger: #f44336;
             --warning: #f5a623;
+            --khaki: #B8860B; /* 土黃色 / 暗金菊 */
             --sky-blue: #87CEEB;
             --cloud-white: #ffffff;
         }
@@ -30,7 +31,7 @@
             position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.1);
         }
 
-        /* 初始設定介面 - 優化手機顯示 */
+        /* 初始設定介面 */
         #start-screen {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: white; z-index: 1000;
@@ -71,7 +72,11 @@
         .piano-key { position: absolute; border: 1px solid #333; border-radius: 0 0 5px 5px; transition: background 0.1s; }
         .white-key { background: white; width: 7.14%; height: 100%; z-index: 1; }
         .black-key { background: #000; width: 4.8%; height: 60%; z-index: 2; border-radius: 0 0 3px 3px; }
-        .key-highlight { background: var(--warning) !important; box-shadow: inset 0 0 15px rgba(255,255,255,0.8); }
+        
+        /* 待選琴鍵改為紅色 */
+        .key-highlight { background: red !important; box-shadow: inset 0 0 15px rgba(255,255,255,0.4); }
+        /* 錯誤顏色 */
+        .key-wrong { background: var(--khaki) !important; }
 
         /* 五線譜樣式 */
         #staff-svg { width: 100%; height: 100%; display: block; }
@@ -85,7 +90,7 @@
         }
         #timer-bar { width: 100%; height: 100%; background: var(--warning); border-radius: 3px; }
 
-        /* 固定按鈕區域 */
+        /* 固定按鈕區域 - 不再隨音符移動 */
         .button-area {
             position: relative; flex-grow: 1; width: 100%; 
             background: #fdfdfd; padding: 10px 5px;
@@ -131,7 +136,6 @@
                 <button class="option-btn" onclick="setTiming(true, this)">計時獎勵</button>
             </div>
         </div>
-        <!-- 手機上移按鈕 -->
         <div style="margin-top: 15px;">
             <button class="btn-main" style="width: 100%; height: 50px; font-size: 1.1rem;" onclick="startGame()">開始練習 (10關)</button>
         </div>
@@ -145,7 +149,6 @@
     <div class="display-area">
         <div id="timer-container"><div id="timer-bar"></div></div>
         
-        <!-- 五線譜 -->
         <svg id="staff-svg" viewBox="0 0 400 140">
             <g stroke="#444" stroke-width="1.3">
                 <line x1="60" y1="30" x2="390" y2="30" /><line x1="60" y1="50" x2="390" y2="50" />
@@ -156,7 +159,6 @@
             <g id="notes-layer"></g>
         </svg>
 
-        <!-- 鋼琴鍵盤 -->
         <div id="piano-container"></div>
     </div>
 
@@ -169,7 +171,7 @@
             <button class="note-btn accidental" onclick="checkAnswer('升So')">升So</button>
             <button class="note-btn accidental" onclick="checkAnswer('升La')">升La</button>
         </div>
-        <div class="btn-row">
+        <div class="btn-row" id="row-white">
             <button class="note-btn" onclick="checkAnswer('Do')">Do</button>
             <button class="note-btn" onclick="checkAnswer('Re')">Re</button>
             <button class="note-btn" onclick="checkAnswer('Mi')">Mi</button>
@@ -201,7 +203,6 @@
     const AudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const SEMITONES = {'Do':0,'升Do':1,'降Re':1,'Re':2,'升Re':3,'降Mi':3,'Mi':4,'Fa':5,'升Fa':6,'降So':6,'So':7,'升So':8,'降La':8,'La':9,'升La':10,'降Si':10,'Si':11};
     
-    // 五線譜音高對應
     const TREBLE_PITCHES = [
         {name:'Do', y:130, ledger:true}, {name:'Re', y:120}, {name:'Mi', y:110}, {name:'Fa', y:100},
         {name:'So', y:90}, {name:'La', y:80}, {name:'Si', y:70}, {name:'Do', y:60},
@@ -297,7 +298,7 @@
             } else {
                 const pool = mode === 'treble' ? TREBLE_PITCHES : BASS_PITCHES;
                 const raw = pool[Math.floor(Math.random() * pool.length)];
-                note = { ...raw, x: 120 + i * 45, id: i, oct: 0 };
+                note = { ...raw, x: 120 + i * 45, id: i, oct: 0, solved: false };
                 renderStaffNote(note);
             }
             state.notes.push(note);
@@ -308,17 +309,16 @@
         const lv = state.currentLevel;
         let note = {};
         const oct = Math.floor(Math.random() * 2);
-        
-        if (lv <= 3) { // 白鍵
+        if (lv <= 3) {
             const idx = Math.floor(Math.random() * 7);
             note = { name: ['Do','Re','Mi','Fa','So','La','Si'][idx], keyId: `wk-${oct}-${idx}`, oct: oct };
-        } else if (lv <= 5) { // 黑鍵 (升)
+        } else if (lv <= 5) {
             const bk = PIANO_BLACK_KEYS[Math.floor(Math.random() * 5)];
             note = { name: bk.sharp, keyId: `bk-${oct}-${bk.semi}`, oct: oct };
-        } else if (lv <= 7) { // 黑鍵 (降)
+        } else if (lv <= 7) {
             const bk = PIANO_BLACK_KEYS[Math.floor(Math.random() * 5)];
             note = { name: bk.flat, keyId: `bk-${oct}-${bk.semi}`, oct: oct };
-        } else { // 混合
+        } else {
             const isBlack = Math.random() > 0.5;
             if (!isBlack) {
                 const idx = Math.floor(Math.random() * 7);
@@ -335,7 +335,6 @@
     function renderStaffNote(note) {
         const layer = document.getElementById('notes-layer');
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        
         if (note.ledger) {
             const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("x1", note.x - 12); line.setAttribute("x2", note.x + 12);
@@ -343,7 +342,6 @@
             line.setAttribute("class", "ledger-line");
             g.appendChild(line);
         }
-        
         const ellipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
         ellipse.setAttribute("cx", note.x); ellipse.setAttribute("cy", note.y);
         ellipse.setAttribute("rx", "7.5"); ellipse.setAttribute("ry", "5.8");
@@ -354,21 +352,30 @@
     }
 
     function updateUI() {
+        if (!state.notes[state.activeIndex]) return;
         const note = state.notes[state.activeIndex];
         
-        // 琴鍵模式 UI
-        if (document.getElementById('piano-container').style.display === 'block') {
-            document.querySelectorAll('.piano-key').forEach(k => k.classList.remove('key-highlight'));
+        const isPiano = document.getElementById('piano-container').style.display === 'block';
+        if (isPiano) {
+            document.querySelectorAll('.piano-key').forEach(k => k.classList.remove('key-highlight', 'key-wrong'));
             if (note.keyId) document.getElementById(note.keyId).classList.add('key-highlight');
         } else {
-            // 五線譜高亮當前音符
             state.notes.forEach((n, idx) => {
                 const h = document.getElementById(`note-head-${idx}`);
-                if (h) h.setAttribute('fill', idx === state.activeIndex ? 'var(--primary)' : (n.solved ? 'var(--success)' : '#000'));
+                if (h) {
+                    if (idx === state.activeIndex) {
+                        h.setAttribute('fill', 'red');
+                        h.setAttribute('rx', '11.25'); // 1.5倍
+                        h.setAttribute('ry', '8.7');
+                    } else {
+                        h.setAttribute('fill', n.solved ? 'var(--success)' : '#000');
+                        h.setAttribute('rx', '7.5');
+                        h.setAttribute('ry', '5.8');
+                    }
+                }
             });
         }
 
-        // 動態按鈕列
         const rowSharp = document.getElementById('row-sharp');
         const rowFlat = document.getElementById('row-flat');
         if (note.name.startsWith('升')) {
@@ -421,6 +428,28 @@
         } else {
             playError();
             state.score--;
+            
+            // 答錯視覺回饋
+            const isPiano = document.getElementById('piano-container').style.display === 'block';
+            if (isPiano) {
+                const key = document.getElementById(note.keyId);
+                if (key) {
+                    key.classList.remove('key-highlight');
+                    key.classList.add('key-wrong');
+                    setTimeout(() => {
+                        key.classList.remove('key-wrong');
+                        key.classList.add('key-highlight');
+                    }, 300);
+                }
+            } else {
+                const head = document.getElementById(`note-head-${state.activeIndex}`);
+                if (head) {
+                    head.setAttribute('fill', 'var(--khaki)');
+                    setTimeout(() => {
+                        head.setAttribute('fill', 'red');
+                    }, 300);
+                }
+            }
         }
         document.getElementById('score-val').innerText = state.score;
     }
@@ -439,7 +468,9 @@
     function playError() {
         const osc = AudioCtx.createOscillator();
         const g = AudioCtx.createGain();
+        osc.type = 'sine';
         osc.frequency.value = 110;
+        g.gain.setValueAtTime(0.3, AudioCtx.currentTime);
         g.gain.exponentialRampToValueAtTime(0.01, AudioCtx.currentTime + 0.2);
         osc.connect(g); g.connect(AudioCtx.destination);
         osc.start(); osc.stop(AudioCtx.currentTime + 0.2);
